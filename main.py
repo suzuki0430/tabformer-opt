@@ -7,11 +7,8 @@ import random
 from args import define_main_parser
 
 from transformers import DataCollatorForLanguageModeling, Trainer, TrainingArguments
-
-from dataset.prsa import PRSADataset
 from dataset.action_history import ActionHistoryDataset
-from dataset.card import TransactionDataset
-from models.modules import TabFormerBertLM, TabFormerGPT2
+from models.modules import TabFormerBertLM
 from misc.utils import random_split_dataset
 from dataset.datacollator import TransDataCollatorForLanguageModeling
 
@@ -47,27 +44,6 @@ def main(args):
                                      flatten=args.flatten,
                                      return_labels=False,
                                      skip_user=args.skip_user)
-    elif args.data_type == 'card':
-        dataset = TransactionDataset(root=args.data_root,
-                                     fname=args.data_fname,
-                                     fextension=args.data_extension,
-                                     vocab_dir=args.output_dir,
-                                     nrows=args.nrows,
-                                     user_ids=args.user_ids,
-                                     mlm=args.mlm,
-                                     cached=args.cached,
-                                     stride=args.stride,
-                                     flatten=args.flatten,
-                                     return_labels=False,
-                                     skip_user=args.skip_user)
-    elif args.data_type == 'prsa':
-        dataset = PRSADataset(stride=args.stride,
-                              mlm=args.mlm,
-                              return_labels=False,
-                              use_station=False,
-                              flatten=args.flatten,
-                              vocab_dir=args.output_dir)
-
     else:
         raise Exception(f"data type '{args.data_type}' not defined")
 
@@ -92,20 +68,14 @@ def main(args):
 
     train_dataset, eval_dataset, test_dataset = random_split_dataset(dataset, lengths)
 
-    if args.lm_type == "bert":
-        tab_net = TabFormerBertLM(custom_special_tokens,
-                               vocab=vocab,
-                               field_ce=args.field_ce,
-                               flatten=args.flatten,
-                               ncols=dataset.ncols,
-                               field_hidden_size=args.field_hs
-                               )
-    else:
-        tab_net = TabFormerGPT2(custom_special_tokens,
-                             vocab=vocab,
-                             field_ce=args.field_ce,
-                             flatten=args.flatten,
-                             )
+    
+    tab_net = TabFormerBertLM(custom_special_tokens,
+                            vocab=vocab,
+                            field_ce=args.field_ce,
+                            flatten=args.flatten,
+                            ncols=dataset.ncols,
+                            field_hidden_size=args.field_hs
+                            )
 
     log.info(f"model initiated: {tab_net.model.__class__}")
 

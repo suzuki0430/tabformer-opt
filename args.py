@@ -11,9 +11,6 @@ def define_main_parser(parser=None):
     parser.add_argument("--seed", type=int,
                         default=9,
                         help="seed to use: 9[default]")
-
-    parser.add_argument("--lm_type", default='bert', choices=['bert', 'gpt2'],
-                        help="gpt or bert choice.")
     parser.add_argument("--flatten", action='store_true',
                         help="enable flattened input, no hierarchical")
     parser.add_argument("--field_ce", action='store_true',
@@ -28,11 +25,9 @@ def define_main_parser(parser=None):
                         default="action_history", choices=['action_history', 'card', 'prsa'],
                         help='root directory for files')
     parser.add_argument("--data_root", type=str,
-                        # default="./data/credit_card/",
                         default="./data/action_history/",
                         help='root directory for files')
     parser.add_argument("--data_fname", type=str,
-                        # default="card_transaction.v3",
                         default="call_chat_summary.20220901-20220902",
                         help='file name of transaction')
     parser.add_argument("--data_extension", type=str,
