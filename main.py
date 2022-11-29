@@ -124,10 +124,4 @@ if __name__ == "__main__":
     makedirs(opts.output_dir, exist_ok=True)
     makedirs(opts.log_dir, exist_ok=True)
 
-    if opts.mlm and opts.lm_type == "gpt2":
-        raise Exception("Error: GPT2 doesn't need '--mlm' option. Please re-run with this flag removed.")
-
-    if not opts.mlm and opts.lm_type == "bert":
-        raise Exception("Error: Bert needs '--mlm' option. Please re-run with this flag included.")
-
     main(opts)

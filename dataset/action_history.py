@@ -118,7 +118,7 @@ class ActionHistoryDataset(Dataset):
         grouped_data = grouped_data.drop('visitor_id',axis=1)
         grouped_data = grouped_data.drop('user_id',axis=1)
         grouped_data = grouped_data.drop('company_id',axis=1)
-        grouped_data = grouped_data.drop('SFA',axis=1)
+        grouped_data = grouped_data.drop('site_id',axis=1)
         grouped_data = grouped_data.drop('stay_seconds',axis=1)
 
         data = data.drop('reaction',axis=1)
@@ -290,7 +290,8 @@ class ActionHistoryDataset(Dataset):
         log.info(f"no of samples {len(self.data)}")
 
     def get_csv(self, fname):
-        data = pd.read_csv(fname, nrows=self.nrows, encoding='shift_jis')
+        # data = pd.read_csv(fname, nrows=self.nrows, encoding='shift_jis')
+        data = pd.read_csv(fname, nrows=self.nrows, encoding='utf-8')
 
         if self.user_ids:
             log.info(f'Filtering data by user ids list: {self.user_ids}...')
@@ -347,14 +348,14 @@ class ActionHistoryDataset(Dataset):
         data = self.reactionEncoder(data)
 
         # 欠損値の処理(ActionHistory)
-        data['MA/CRM'] = self.nanNone(data['MA/CRM'])
-        data['SFA'] = self.nanNone(data['SFA'])
+        data['ma_crm'] = self.nanNone(data['ma_crm'])
+        data['sfa'] = self.nanNone(data['sfa'])
         data['stay_seconds'] = self.nanZero(data['stay_seconds'])
 
         data['stay_seconds'] = self.staySecondsEncoder(data['stay_seconds'])
-        data['URL'] = self.nanNone(data['URL'])
+        data['url'] = self.nanNone(data['url'])
 
-        sub_columns = ['device', 'MA/CRM', 'SFA', 'URL']
+        sub_columns = ['device', 'ma_crm', 'sfa', 'url']
         
         log.info("label-fit-transform.")
         for col_name in tqdm.tqdm(sub_columns):
@@ -373,7 +374,7 @@ class ActionHistoryDataset(Dataset):
         data['stay_seconds'] = self._quantize(coldata, bin_edges)
         self.encoder_fit["stay_seconds-Quant"] = [bin_edges, bin_centers, bin_widths]
 
-        # TODO: URL
+        # TODO: url
         
         # TODO: revisit
 
@@ -383,9 +384,9 @@ class ActionHistoryDataset(Dataset):
                              'hour',
                              'company_id',
                              'device',
-                             'MA/CRM',
-                             'SFA',
-                             'URL',
+                             'ma_crm',
+                             'sfa',
+                             'url',
                              'stay_seconds',
                              'day_of_week',
                             #  'revisit',
