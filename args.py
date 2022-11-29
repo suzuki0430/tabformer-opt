@@ -20,10 +20,6 @@ def define_main_parser(parser=None):
     parser.add_argument("--mlm_prob", type=float,
                         default=0.15,
                         help="mask mlm_probability")
-
-    parser.add_argument("--data_type", type=str,
-                        default="action_history", choices=['action_history', 'card', 'prsa'],
-                        help='root directory for files')
     parser.add_argument("--data_root", type=str,
                         default="./data/action_history/",
                         help='root directory for files')
@@ -97,9 +93,6 @@ def define_fine_tuning_parser(parser=None):
                         default='./output_fine_tuning/action_history/fine_tuning_model.pth',
                         help="cached vocab file")
 
-    parser.add_argument("--data_type", type=str,
-                        default="action_history", choices=['action_history', 'card', 'prsa'],
-                        help='root directory for files')
 
     # card
     # parser.add_argument("--data_root", type=str,
@@ -120,9 +113,5 @@ def define_fine_tuning_parser(parser=None):
     # parser.add_argument("--output_model_dir", type=str,
     #                     default='./output_fine_tuning/credit_card/fine_tuning_model.pth',
     #                     help="cached vocab file")
-
-    # parser.add_argument("--data_type", type=str,
-    #                     default="card", choices=['action_history', 'card', 'prsa'],
-    #                     help='root directory for files')
     
     return parser

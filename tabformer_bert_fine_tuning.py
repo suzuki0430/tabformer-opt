@@ -10,7 +10,6 @@ from transformers import AdamW
 # import wandb
 from tqdm.notebook import tqdm
 from dataset.vocab import AttrDict
-from dataset.card import FineTuningDataset
 from dataset.action_history import FineTuningActionHistoryDataset
 from dataset.datacollator import FineTuningDataCollatorForLanguageModeling
 from misc.utils import random_split_dataset
@@ -76,32 +75,18 @@ def validation_loop(valid_loader, model):
 
 def main(args):
     # Datasets
-    if args.data_type == "action_history":
-        dataset = FineTuningActionHistoryDataset(
-                root="./data/action_history/",
-                fname="call_chat_summary.20220901-20220901", # pretraingのファイルとは別
-                vocab_dir="./output_pretraining/action_history/",
-                fextension="",
-                nrows=None,
-                user_ids=None,
-                mlm=True,                
-                stride=10,
-                flatten=True,
-                return_labels=True,
-                skip_user=False)
-    elif args.data_type == "card":
-        dataset = FineTuningDataset(
-                    root="./data/credit_card/",
-                    fname="card_transaction.v3",
-                    vocab_dir="./output_pretraining/credit_card/",
-                    fextension="",
-                    nrows=None,
-                    user_ids=None,
-                    mlm=True,                
-                    stride=10,
-                    flatten=True,
-                    return_labels=True,
-                    skip_user=False)
+    dataset = FineTuningActionHistoryDataset(
+            root="./data/action_history/",
+            fname="call_chat_summary.20220901-20220901", # pretraingのファイルとは別
+            vocab_dir="./output_pretraining/action_history/",
+            fextension="",
+            nrows=None,
+            user_ids=None,
+            mlm=True,                
+            stride=10,
+            flatten=True,
+            return_labels=True,
+            skip_user=False)
 
     totalN = len(dataset)
     trainN = int(0.80 * totalN)
