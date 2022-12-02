@@ -24,7 +24,7 @@ def define_main_parser(parser=None):
                         default="./data/action_history/",
                         help='root directory for files')
     parser.add_argument("--data_fname", type=str,
-                        default="summary.18.2022-11-22_2022-11-29",
+                        default="summary.3.2022-10-01_2022-11-30",
                         help='file name of transaction')
     parser.add_argument("--data_extension", type=str,
                         default="",
@@ -92,26 +92,5 @@ def define_fine_tuning_parser(parser=None):
     parser.add_argument("--output_model_dir", type=str,
                         default='./output_fine_tuning/action_history/fine_tuning_model.pth',
                         help="cached vocab file")
-
-
-    # card
-    # parser.add_argument("--data_root", type=str,
-    #                     default="./data/credit_card/",
-    #                     help='root directory for files')
-    # parser.add_argument("--data_fname", type=str,
-    #                     default="card_transaction.v3",
-    #                     help='file name of transaction')
-
-    # parser.add_argument("--output_dir", type=str,
-    #                     default='./output_pretraining/credit_card/',
-    #                     help="path to model dump")
-
-    # parser.add_argument("--vocab_file", type=str,
-    #                     default='./output_pretraining/credit_card/vocab.nb',
-    #                     help="cached vocab file")
-
-    # parser.add_argument("--output_model_dir", type=str,
-    #                     default='./output_fine_tuning/credit_card/fine_tuning_model.pth',
-    #                     help="cached vocab file")
     
     return parser

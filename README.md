@@ -22,6 +22,8 @@ conda env create -f setup.yml
 
 ### Tabular BERT
 
+#### pretraining
+
 To train a tabular BERT model on action history transaction dataset run :
 
 ```
@@ -29,6 +31,18 @@ $ python main.py --do_train --mlm --field_ce \
                  --field_hs 64 \
                  --output_dir [output_dir]
 ```
+
+ex.)
+```
+$ python main.py --do_train --mlm --field_ce --field_hs 64 --output_dir ./output_pretraining/action_history/
+```
+
+#### fine-tuning
+
+```
+$ python tabformer_bert_fine_tuning.py
+```
+
 
 Description of some options (more can be found in _`args.py`_):
 

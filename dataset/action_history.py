@@ -25,7 +25,10 @@ class ActionHistoryDataset(Dataset):
     def __init__(self,
                  mlm,
                  user_ids=None,
-                 seq_len=10,
+                #  seq_len=10, # transition単位のレコードだと難しい
+                #  stride=5,　# transition単位のレコードだと難しい
+                 seq_len=2,
+                 stride=1,
                  num_bins=10,
                  cached=True,
                  root="./data/action_history/",
@@ -34,7 +37,6 @@ class ActionHistoryDataset(Dataset):
                  fextension="",
                  nrows=None,
                  flatten=False,
-                 stride=5,
                  adap_thres=10 ** 8,
                  return_labels=False,
                  skip_user=False):
@@ -113,12 +115,14 @@ class ActionHistoryDataset(Dataset):
     def reactionEncoder(data):
         data['reaction'] = np.where(((data['type'] == 'chat') & (data['chat_sender'] == 'visitor') & (((data['chat_type'] == 'userAction') & (data['chat'] == 'はい')) | (data['chat_type'] == 'callRequest') | (data['chat_type'] == 'chat'))) | ((data['type'] == 'call') & (data['call_end_date'])), 1, 0)
 
+        # reaction計算のため
         grouped_data = data.groupby(['session_id'], as_index=False).sum()
 
         grouped_data = grouped_data.drop('visitor_id',axis=1)
         grouped_data = grouped_data.drop('user_id',axis=1)
         grouped_data = grouped_data.drop('company_id',axis=1)
         grouped_data = grouped_data.drop('site_id',axis=1)
+        grouped_data = grouped_data.drop('sfa',axis=1)
         grouped_data = grouped_data.drop('stay_seconds',axis=1)
 
         data = data.drop('reaction',axis=1)
@@ -150,7 +154,7 @@ class ActionHistoryDataset(Dataset):
         quant_inputs = quant_inputs.clip(1, self.num_bins) - 1  # Clip edges
         return quant_inputs
 
-    # def user_level_data(self):
+    # def company_level_data(self):
     #     fname = path.join(self.root, f"preprocessed/{self.fname}.user{self.fextension}.pkl")
     #     trans_data, trans_labels = [], []
 
@@ -162,34 +166,34 @@ class ActionHistoryDataset(Dataset):
     #         columns_names = cached_data["columns"]
 
     #     else:
-    #         unique_users = self.trans_table["User"].unique()
+    #         unique_companies = self.trans_table["company_id"].unique()
     #         columns_names = list(self.trans_table.columns)
 
-    #         for user in tqdm.tqdm(unique_users):
-    #             user_data = self.trans_table.loc[self.trans_table["User"] == user]
-    #             user_trans, user_labels = [], []
-    #             for idx, row in user_data.iterrows():
+    #         for company in tqdm.tqdm(unique_companies):
+    #             company_data = self.trans_table.loc[self.trans_table["company_id"] == company]
+    #             company_trans, company_labels = [], []
+    #             for idx, row in company_data.iterrows():
     #                 row = list(row)
 
-    #                 # assumption that user is first field
+    #                 # assumption that company is first field
     #                 skip_idx = 1 if self.skip_user else 0
 
-    #                 user_trans.extend(row[skip_idx:-1])
-    #                 user_labels.append(row[-1])
+    #                 company_trans.extend(row[skip_idx:-1])
+    #                 company_labels.append(row[-1])
 
-    #             trans_data.append(user_trans)
-    #             trans_labels.append(user_labels)
+    #             trans_data.append(company_trans)
+    #             trans_labels.append(company_labels)
 
     #         if self.skip_user:
-    #             columns_names.remove("User")
+    #             columns_names.remove("company_id")
 
     #         with open(fname, 'wb') as cache_file:
     #             pickle.dump({"trans": trans_data, "labels": trans_labels, "columns": columns_names}, cache_file)
 
     #     # convert to str
     #     return trans_data, trans_labels, columns_names
-
-    def company_level_data(self):
+    
+    def visitor_level_data(self):
         fname = path.join(self.root, f"preprocessed/{self.fname}.user{self.fextension}.pkl")
         trans_data, trans_labels = [], []
 
@@ -201,26 +205,26 @@ class ActionHistoryDataset(Dataset):
             columns_names = cached_data["columns"]
 
         else:
-            unique_companies = self.trans_table["company_id"].unique()
+            unique_visitors = self.trans_table["visitor_id"].unique()
             columns_names = list(self.trans_table.columns)
 
-            for company in tqdm.tqdm(unique_companies):
-                company_data = self.trans_table.loc[self.trans_table["company_id"] == company]
-                company_trans, company_labels = [], []
-                for idx, row in company_data.iterrows():
+            for visitor in tqdm.tqdm(unique_visitors):
+                visitor_data = self.trans_table.loc[self.trans_table["visitor_id"] == visitor]
+                visitor_trans, visitor_labels = [], []
+                for idx, row in visitor_data.iterrows():
                     row = list(row)
 
-                    # assumption that company is first field
+                    # assumption that visitor is first field
                     skip_idx = 1 if self.skip_user else 0
 
-                    company_trans.extend(row[skip_idx:-1])
-                    company_labels.append(row[-1])
+                    visitor_trans.extend(row[skip_idx:-1])
+                    visitor_labels.append(row[-1])
 
-                trans_data.append(company_trans)
-                trans_labels.append(company_labels)
+                trans_data.append(visitor_trans)
+                trans_labels.append(visitor_labels)
 
             if self.skip_user:
-                columns_names.remove("company_id")
+                columns_names.remove("visitor_id")
 
             with open(fname, 'wb') as cache_file:
                 pickle.dump({"trans": trans_data, "labels": trans_labels, "columns": columns_names}, cache_file)
@@ -250,8 +254,8 @@ class ActionHistoryDataset(Dataset):
 
     def prepare_samples(self):
         log.info("preparing user level data...")
-        # trans_data, trans_labels, columns_names = self.user_level_data()
-        trans_data, trans_labels, columns_names = self.company_level_data()
+        # trans_data, trans_labels, columns_names = self.company_level_data()
+        trans_data, trans_labels, columns_names = self.visitor_level_data()
 
         log.info("creating transaction samples with vocab")
         for user_idx in tqdm.tqdm(range(len(trans_data))):
@@ -290,8 +294,8 @@ class ActionHistoryDataset(Dataset):
         log.info(f"no of samples {len(self.data)}")
 
     def get_csv(self, fname):
-        # data = pd.read_csv(fname, nrows=self.nrows, encoding='shift_jis')
-        data = pd.read_csv(fname, nrows=self.nrows, encoding='utf-8')
+        data = pd.read_csv(fname, nrows=self.nrows, encoding='shift_jis')
+        # data = pd.read_csv(fname, nrows=self.nrows, encoding='utf-8')
 
         if self.user_ids:
             log.info(f'Filtering data by user ids list: {self.user_ids}...')
@@ -353,7 +357,7 @@ class ActionHistoryDataset(Dataset):
         data['stay_seconds'] = self.nanZero(data['stay_seconds'])
 
         data['stay_seconds'] = self.staySecondsEncoder(data['stay_seconds'])
-        data['url'] = self.nanNone(data['url'])
+        data['url'] = self.nanNone(data['url']) #　TODO: カテゴリ分け必要
 
         sub_columns = ['device', 'ma_crm', 'sfa', 'url']
         
@@ -382,7 +386,9 @@ class ActionHistoryDataset(Dataset):
                              'month',
                              'day',
                              'hour',
+                             'visitor_id',
                              'company_id',
+                             'site_id',
                              'device',
                              'ma_crm',
                              'sfa',

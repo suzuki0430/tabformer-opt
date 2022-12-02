@@ -77,7 +77,7 @@ def main(args):
     # Datasets
     dataset = FineTuningActionHistoryDataset(
             root="./data/action_history/",
-            fname="call_chat_summary.20220901-20220901", # pretraingのファイルとは別
+            fname="summary.3.2022-10-01_2022-11-30", # pretraingのファイルとは別
             vocab_dir="./output_pretraining/action_history/",
             fextension="",
             nrows=None,
@@ -221,9 +221,9 @@ def main(args):
     # wandb.finish()
     torch.save(model.state_dict(), args.output_model_dir)
    
-# if __name__ == "main":
+if __name__ == "__main__":
 
-parser = define_fine_tuning_parser()
-opts = parser.parse_args()
+    parser = define_fine_tuning_parser()
+    opts = parser.parse_args()
 
-main(opts)
+    main(opts)

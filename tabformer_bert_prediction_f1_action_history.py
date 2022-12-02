@@ -12,7 +12,9 @@ column_names = ['year',
                 'month',
                 'day',
                 'hour',
+                'visitor_id',
                 'company_id',
+                'site_id',
                 'device',
                 'ma_crm',
                 'sfa',
@@ -23,7 +25,7 @@ column_names = ['year',
                 'reaction']
 
 # prepare data
-data = pd.read_csv('./data/action_history/preprocessed/call_chat_summary.20220901-20220902.encoded.csv', dtype='Int64')
+data = pd.read_csv('./data/action_history/preprocessed/summary.3.2022-10-01_2022-11-30.encoded.csv', dtype='Int64')
 input_data = data.drop("reaction", axis=1).values.tolist()
 labels = data['reaction'].values.tolist()
 
