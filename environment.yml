@@ -1,4 +1,4 @@
-name: tabformer
+name: tabformer-opt
 channels:
   - anaconda
   - conda-forge
@@ -129,8 +129,11 @@ dependencies:
   - pip:
       - sentencepiece==0.1.97
       - tokenizers==0.8.1rc2
-      - torch==1.7.1+cu110
+      # - torch==1.7.1+cu110
+      - torch==1.7.1
       - torchaudio==0.7.2
-      - torchvision==0.8.2+cu110
+      # - torchvision==0.8.2+cu110
+      - torchvision==0.8.2
       - transformers==3.2.0
-prefix: /home/ec2-user/.conda/envs/tabformer
+# prefix: /home/ec2-user/.conda/envs/tabformer
+# コメントアウトで修正
