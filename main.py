@@ -5,6 +5,8 @@ import numpy as np
 import torch
 import random
 from args import define_main_parser
+import os
+import json
 
 from transformers import DataCollatorForLanguageModeling, Trainer, TrainingArguments
 from dataset.action_history import ActionHistoryDataset
@@ -119,6 +121,12 @@ if __name__ == "__main__":
 
     parser = define_main_parser()
     opts = parser.parse_args()
+    
+    if "SM_HPS" in os.environ.keys():
+        hps = json.loads(os.environ["SM_HPS"])
+        for key, value in hps.items():
+            if opts.__contains__(key):
+                opts.__setattr__(key, value)
 
     opts.log_dir = join(opts.output_dir, "logs")
     makedirs(opts.output_dir, exist_ok=True)

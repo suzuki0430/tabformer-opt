@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import BertTokenizer
 import os
+import json
 import random
 from transformers import get_cosine_schedule_with_warmup
 from sklearn.metrics import mean_squared_error
@@ -225,5 +226,11 @@ if __name__ == "__main__":
 
     parser = define_fine_tuning_parser()
     opts = parser.parse_args()
+    
+    if "SM_HPS" in os.environ.keys():
+        hps = json.loads(os.environ["SM_HPS"])
+        for key, value in hps.items():
+            if opts.__contains__(key):
+                opts.__setattr__(key, value)
 
     main(opts)
