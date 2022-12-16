@@ -2,6 +2,7 @@ from collections import OrderedDict
 import numpy as np
 
 import pickle
+from os import path
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -10,7 +11,7 @@ class AttrDict(dict):
 
 
 class Vocabulary:
-    def __init__(self, adap_thres=10000, target_column_name="Is Fraud?"):
+    def __init__(self, adap_thres=10000, target_column_name="Is Fraud?", vocab_dir="./output_pretraining/action_history/"):
         self.unk_token = "[UNK]"
         self.sep_token = "[SEP]"
         self.pad_token = "[PAD]"
@@ -20,6 +21,7 @@ class Vocabulary:
         self.eos_token = "[EOS]"
 
         self.adap_thres = adap_thres
+        self.vocab_dir = vocab_dir
         self.adap_sm_cols = set()
 
         self.target_column_name = target_column_name
@@ -66,11 +68,11 @@ class Vocabulary:
         
         else:
             # save token2id
-            with open('./output_pretraining/action_history/vocab_token2id.bin', 'wb') as p:
+            with open(path.join(self.vocab_dir, f"vocab_token2id.bin"), 'wb') as p:
                 pickle.dump(self.token2id, p)
 
             # save id2token
-            with open('./output_pretraining/action_history/vocab_id2token.bin', 'wb') as p:
+            with open(path.join(self.vocab_dir, f"vocab_id2token.bin"), 'wb') as p:
                 pickle.dump(self.id2token, p)
 
         if return_local:

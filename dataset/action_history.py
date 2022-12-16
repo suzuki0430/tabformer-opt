@@ -55,7 +55,7 @@ class ActionHistoryDataset(Dataset):
 
         self.flatten = flatten
 
-        self.vocab = Vocabulary(adap_thres, target_column_name="reaction") # ラベルのカラムどうするか
+        self.vocab = Vocabulary(adap_thres, target_column_name="reaction", vocab_dir=vocab_dir) # ラベルのカラムどうするか
         self.seq_len = seq_len
         self.encoder_fit = {}
 

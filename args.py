@@ -42,7 +42,8 @@ def define_main_parser(parser=None):
                         help="no of transactions to use")
 
     parser.add_argument("--output_dir", type=str,
-                        default='checkpoints',
+                        # default='checkpoints',
+                        default="./output_pretraining/action_history/",
                         help="path to model dump")
     parser.add_argument("--checkpoint", type=int,
                         default=0,
