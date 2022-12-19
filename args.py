@@ -79,7 +79,7 @@ def define_fine_tuning_parser(parser=None):
                         default="./data/action_history/",
                         help='root directory for files')
     parser.add_argument("--data_fname", type=str,
-                        default="call_chat_summary.20220901-20220902",
+                        default="summary.3.2022-10-01_2022-11-30",
                         help='file name of transaction')
 
     parser.add_argument("--output_dir", type=str,
