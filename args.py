@@ -83,15 +83,11 @@ def define_fine_tuning_parser(parser=None):
                         help='file name of transaction')
 
     parser.add_argument("--output_dir", type=str,
-                        default='./output_pretraining/action_history/',
+                        default='./output_fine_tuning/action_history/',
                         help="path to model dump")
-
-    parser.add_argument("--vocab_file", type=str,
-                        default='./output_pretraining/action_history/vocab.nb',
-                        help="cached vocab file")
-
-    parser.add_argument("--output_model_dir", type=str,
-                        default='./output_fine_tuning/action_history/fine_tuning_model.pth',
-                        help="cached vocab file")
+    
+    parser.add_argument("--model_path", type=str,
+                        default='./output_pretraining/action_history/',
+                        help="path to model")
     
     return parser

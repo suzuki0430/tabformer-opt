@@ -39,7 +39,8 @@ class ActionHistoryDataset(Dataset):
                  flatten=False,
                  adap_thres=10 ** 8,
                  return_labels=False,
-                 skip_user=False):
+                 skip_user=False,
+                 token2id_file=""):
 
         self.root = root
         self.fname = fname
@@ -68,7 +69,7 @@ class ActionHistoryDataset(Dataset):
         self.num_bins = num_bins
         self.encode_data()
         self.init_vocab()
-        self.prepare_samples()
+        self.prepare_samples(token2id_file)
         self.save_vocab(vocab_dir)
 
     def __getitem__(self, index):
@@ -232,7 +233,7 @@ class ActionHistoryDataset(Dataset):
         # convert to str
         return trans_data, trans_labels, columns_names
 
-    def format_trans(self, trans_lst, column_names):
+    def format_trans(self, trans_lst, column_names, token2id_file):
         trans_lst = list(divide_chunks(trans_lst, len(self.vocab.field_keys) - 2))  # 2 to ignore isFraud and SPECIAL
         user_vocab_ids = []
 
@@ -252,7 +253,7 @@ class ActionHistoryDataset(Dataset):
 
         return user_vocab_ids
 
-    def prepare_samples(self):
+    def prepare_samples(self, token2id_file):
         log.info("preparing user level data...")
         # trans_data, trans_labels, columns_names = self.company_level_data()
         trans_data, trans_labels, columns_names = self.visitor_level_data()
@@ -260,7 +261,7 @@ class ActionHistoryDataset(Dataset):
         log.info("creating transaction samples with vocab")
         for user_idx in tqdm.tqdm(range(len(trans_data))):
             user_row = trans_data[user_idx]
-            user_row_ids = self.format_trans(user_row, columns_names)
+            user_row_ids = self.format_trans(user_row, columns_names, token2id_file)
 
             user_labels = trans_labels[user_idx]
 
@@ -426,8 +427,8 @@ class FineTuningActionHistoryDataset(ActionHistoryDataset):
         self.vocab.set_field_keys(column_names)
 
     # pre-trainingで保存した辞書でtoken2idをおこなう
-    def format_trans(self, trans_lst, column_names):
-        with open('./output_pretraining/action_history/vocab_token2id.bin', 'rb') as p:
+    def format_trans(self, trans_lst, column_names, token2id_file):
+        with open(token2id_file, 'rb') as p:
             vocab_dic = pickle.load(p)
 
         trans_lst = list(divide_chunks(trans_lst, len(self.vocab.field_keys) - 2))  # 2 to ignore isFraud and SPECIAL

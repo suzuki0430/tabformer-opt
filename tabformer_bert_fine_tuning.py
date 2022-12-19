@@ -16,6 +16,8 @@ from dataset.datacollator import FineTuningDataCollatorForLanguageModeling
 from misc.utils import random_split_dataset
 from models.common import CommonModel
 from args import define_fine_tuning_parser
+import tarfile
+from os import path
 
 device = torch.device("cuda")
 scaler = torch.cuda.amp.GradScaler()
@@ -75,10 +77,26 @@ def validation_loop(valid_loader, model):
 
 
 def main(args):
+    key = os.getenv('SM_MODEL_DIR')
+    
+    if key :
+        with tarfile.open(name=path.join(args.model_path, f'model.tar.gz'), mode="r:gz") as mytar:
+            mytar.extractall(path.join(args.model_path, f'model'))
+            
+            token2id_file = path.join(args.model_path, f"model/vocab_token2id.bin")
+            vocab_file = path.join(args.model_path, f"model/vocab.nb")
+            pretrained_model = path.join(args.model_path, f"model/checkpoint-500/pytorch_model.bin")
+            pretrained_config = path.join(args.model_path, f"model/checkpoint-500/config.json")
+    else :
+            vocab_file = path.join(args.model_path, f"vocab.nb")
+            token2id_file = path.join(args.model_path, f"vocab_token2id.bin")
+            pretrained_model = path.join(args.model_path, f"checkpoint-500/pytorch_model.bin")
+            pretrained_config = path.join(args.model_path, f"checkpoint-500/config.json")
+    
     # Datasets
     dataset = FineTuningActionHistoryDataset(
-            root="./data/action_history/",
-            fname="summary.3.2022-10-01_2022-11-30", # pretraingのファイルとは別
+            root=args.data_root,
+            fname=args.data_fname, # pretraingのファイルとは別
             vocab_dir="./output_pretraining/action_history/",
             fextension="",
             nrows=None,
@@ -87,7 +105,8 @@ def main(args):
             stride=10,
             flatten=True,
             return_labels=True,
-            skip_user=False)
+            skip_user=False,
+            token2id_file=token2id_file)
 
     totalN = len(dataset)
     trainN = int(0.80 * totalN)
@@ -109,7 +128,7 @@ def main(args):
         special_tokens_map[key] = token
 
     tok = BertTokenizer(
-        vocab_file=args.vocab_file, 
+        vocab_file=vocab_file, 
         do_lower_case=False,
         **AttrDict(special_tokens_map))
 
@@ -135,7 +154,7 @@ def main(args):
                         drop_last=True, 
                         num_workers=0)
     # set models
-    model = CommonModel()
+    model = CommonModel(pretrained_config, pretrained_model)
     model.to(device)
 
     # freeze parameters in all network
@@ -220,8 +239,7 @@ def main(args):
                 train_iter_loss = 0
             bar.update(1)
     # wandb.finish()
-    torch.save(model.state_dict(), args.output_model_dir)
-   
+    torch.save(model.state_dict(), path.join(args.output_dir, f'fine_tuning_model.pth'))
 if __name__ == "__main__":
 
     parser = define_fine_tuning_parser()
