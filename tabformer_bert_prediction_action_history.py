@@ -3,6 +3,8 @@ import torch
 from models.common import CommonModel
 from dataset.vocab import Vocabulary
 import pickle
+from os import path
+from dataset.preprocessing import ActionHistoryPreprocessing
 
 device = torch.device("cuda")
 
@@ -25,26 +27,27 @@ column_names = ['year',
                 'reaction']
 
 # prepare data
-data = pd.read_csv('./data/action_history/preprocessed/summary.3.2022-10-01_2022-11-30.encoded.csv', dtype='Int64')
-single_data = data.iloc[1, :].drop("reaction").tolist()
-print("single_data", single_data)
+data = pd.read_csv('./data/action_history/summary.3.2022-10-01_2022-11-30.csv', encoding='shift_jis')
 
-# load token2id
-with open('./output_pretraining/action_history/vocab_token2id.bin', 'rb') as p:
-    vocab_dic = pickle.load(p)
+# seq_lenと同じ数のリスト（試験的に2データで設定）
+items = data.iloc[[1, 2],:].values.tolist()
+print("items", items)
 
-# transfer data to input_ids
-vocab = Vocabulary(adap_thres, target_column_name="reaction")
-sep_id = vocab.get_id(vocab.sep_token, special_token=True)
+# 事前学習時に出力されたencoder_fitを読み込む
+root = "./data/action_history/"
+fname = "summary.3.2022-10-01_2022-11-30"
 
-vocab_ids = []
-for jdx, field in enumerate(single_data):
-    vocab_id, _ = vocab_dic[column_names[jdx]][field]
-    vocab_ids.append(vocab_id)
+dirname = path.join(root, "preprocessed")        
+encoder_fname = path.join(dirname, f'{fname}.encoder_fit.pkl')
+encoder_fit = pickle.load(open(encoder_fname, "rb"))
 
-vocab_ids.append(sep_id)
+# pre-processing
+preprocessed_data = ActionHistoryPreprocessing(
+        input_data=items,
+        token2id_file='./output_pretraining/action_history/vocab_token2id.bin',
+        encoder_fit=encoder_fit)
 
-input_ids = torch.tensor([vocab_ids], dtype=torch.long)
+input_ids = torch.tensor([preprocessed_data.getitem()], dtype=torch.long)
 
 # load model
 model = CommonModel()
