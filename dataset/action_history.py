@@ -40,7 +40,9 @@ class ActionHistoryDataset(Dataset):
                  adap_thres=10 ** 8,
                  return_labels=False,
                  skip_user=False,
-                 token2id_file=""):
+                 token2id_file="",
+                 output_dir='./output_pretraining/action_history/',
+                 encoder_fname=''):
 
         self.root = root
         self.fname = fname
@@ -55,6 +57,8 @@ class ActionHistoryDataset(Dataset):
         self.trans_stride = stride
 
         self.flatten = flatten
+        self.output_dir = output_dir
+        self.encoder_fname = encoder_fname
 
         self.vocab = Vocabulary(adap_thres, target_column_name="reaction", vocab_dir=vocab_dir) # ラベルのカラムどうするか
         self.seq_len = seq_len
@@ -195,7 +199,8 @@ class ActionHistoryDataset(Dataset):
     #     return trans_data, trans_labels, columns_names
     
     def visitor_level_data(self):
-        fname = path.join(self.root, f"preprocessed/{self.fname}.user{self.fextension}.pkl")
+        # fname = path.join(self.root, f"preprocessed/{self.fname}.user{self.fextension}.pkl")
+        fname = path.join(self.output_dir, f"{self.fname}.user{self.fextension}.pkl")
         trans_data, trans_labels = [], []
 
         if self.cached and path.isfile(fname):
@@ -335,7 +340,8 @@ class ActionHistoryDataset(Dataset):
                 self.vocab.adap_sm_cols.add(column)
 
     def encode_data(self):
-        dirname = path.join(self.root, "preprocessed")
+        # dirname = path.join(self.root, "preprocessed")
+        dirname = self.output_dir
         fname = f'{self.fname}{self.fextension}.encoded.csv'
         data_file = path.join(self.root, f"{self.fname}.csv")
 
@@ -409,6 +415,10 @@ class ActionHistoryDataset(Dataset):
         encoder_fname = path.join(dirname, f'{self.fname}{self.fextension}.encoder_fit.pkl')
         log.info(f"writing cached encoder fit to {encoder_fname}")
         pickle.dump(self.encoder_fit, open(encoder_fname, "wb"))
+        
+        # Training JobsでS3にアップロードする
+        encoder_fname_jobs = path.join(self.output_dir, f'{self.fname}{self.fextension}.encoder_fit.pkl')
+        pickle.dump(self.encoder_fit, open(encoder_fname_jobs, "wb"))
 
 
 class FineTuningActionHistoryDataset(ActionHistoryDataset):
@@ -449,3 +459,66 @@ class FineTuningActionHistoryDataset(ActionHistoryDataset):
             user_vocab_ids.append(vocab_ids)
 
         return user_vocab_ids
+    
+    # 既存のencoder_fitを使用する
+    def encode_data(self):
+        data_file = path.join(self.root, f"{self.fname}.csv")
+        
+        data = self.get_csv(data_file)
+        log.info(f"{data_file} is read.")
+
+        # 既存のencoder_fitをロードする
+        self.encoder_fit = pickle.load(open(self.encoder_fname, "rb"))
+
+        # reaction導出, join
+        data = self.reactionEncoder(data)
+
+        # 欠損値の処理(ActionHistory)
+        data['ma_crm'] = self.nanNone(data['ma_crm'])
+        data['sfa'] = self.nanNone(data['sfa'])
+        data['stay_seconds'] = self.nanZero(data['stay_seconds'])
+
+        data['stay_seconds'] = self.staySecondsEncoder(data['stay_seconds'])
+        data['url'] = self.nanNone(data['url']) #　TODO: カテゴリ分け必要
+
+        # ロードしたencoderでtransformを実行する
+        sub_columns = ['device','ma_crm','sfa','url']
+
+        for col_name in tqdm.tqdm(sub_columns):
+            col_data = self.encoder_fit[col_name].transform(data[col_name])
+            data[col_name] = col_data
+
+        # encoder_fit['stay_seconds']を利用して変換
+        log.info("stay_seconds quant transform")
+        coldata = np.array(data['stay_seconds'])
+        # bin_edges, bin_centers, bin_widths = self._quantization_binning(coldata)
+        # data['stay_seconds'] = self._quantize(coldata, bin_edges)
+        # # 不要な気がする
+        # self.encoder_fit["stay_seconds-Quant"] = [bin_edges, bin_centers, bin_widths]
+        
+        data['stay_seconds'] = self._quantize(coldata, self.encoder_fit["stay_seconds-Quant"][0])
+
+        # Time分割, day_of_week
+        data['year'], data['month'], data['day'], data['hour'], data['day_of_week']  = self.timeEncoder(data['created_at'])
+
+        # TODO: url
+        
+        # TODO: revisit
+
+        columns_to_select = ['year',
+                             'month',
+                             'day',
+                             'hour',
+                             'visitor_id',
+                             'company_id',
+                             'site_id',
+                             'device',
+                             'ma_crm',
+                             'sfa',
+                             'url',
+                             'stay_seconds',
+                             'day_of_week',
+                            #  'revisit',
+                             'reaction']
+
+        self.trans_table = data[columns_to_select]

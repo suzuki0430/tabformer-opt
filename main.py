@@ -44,7 +44,8 @@ def main(args):
                                     stride=args.stride,
                                     flatten=args.flatten,
                                     return_labels=False,
-                                    skip_user=args.skip_user)
+                                    skip_user=args.skip_user,
+                                    output_dir=args.output_dir)
     
     vocab = dataset.vocab
     custom_special_tokens = vocab.get_special_tokens()

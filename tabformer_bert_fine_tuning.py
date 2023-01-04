@@ -87,11 +87,13 @@ def main(args):
             vocab_file = path.join(args.model_path, f"model/vocab.nb")
             pretrained_model = path.join(args.model_path, f"model/checkpoint-500/pytorch_model.bin")
             pretrained_config = path.join(args.model_path, f"model/checkpoint-500/config.json")
+            encoder_fname = path.join(args.model_path, f"model/{args.data_fname}.encoder_fit.pkl")
     else :
             vocab_file = path.join(args.model_path, f"vocab.nb")
             token2id_file = path.join(args.model_path, f"vocab_token2id.bin")
             pretrained_model = path.join(args.model_path, f"checkpoint-500/pytorch_model.bin")
             pretrained_config = path.join(args.model_path, f"checkpoint-500/config.json")
+            encoder_fname = path.join(args.model_path, f"{args.data_fname}.encoder_fit.pkl")
     
     # Datasets
     dataset = FineTuningActionHistoryDataset(
@@ -106,7 +108,8 @@ def main(args):
             flatten=True,
             return_labels=True,
             skip_user=False,
-            token2id_file=token2id_file)
+            token2id_file=token2id_file,
+            encoder_fname=encoder_fname)
 
     totalN = len(dataset)
     trainN = int(0.80 * totalN)
