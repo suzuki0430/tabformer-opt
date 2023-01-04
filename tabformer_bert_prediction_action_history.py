@@ -34,11 +34,11 @@ items = data.iloc[[1, 2],:].values.tolist()
 print("items", items)
 
 # 事前学習時に出力されたencoder_fitを読み込む
-root = "./data/action_history/"
+root = "./output_pretraining/action_history/"
 fname = "summary.3.2022-10-01_2022-11-30"
 
-dirname = path.join(root, "preprocessed")        
-encoder_fname = path.join(dirname, f'{fname}.encoder_fit.pkl')
+# dirname = path.join(root, "preprocessed")        
+encoder_fname = path.join(root, f'{fname}.encoder_fit.pkl')
 encoder_fit = pickle.load(open(encoder_fname, "rb"))
 
 # pre-processing
