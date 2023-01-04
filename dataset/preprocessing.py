@@ -1,15 +1,9 @@
-import os
-from os import path
 import pandas as pd
 import numpy as np
 import math
 import tqdm
 import pickle
 import logging
-
-import torch
-import torch.nn.functional as F
-from torch.utils.data.dataset import Dataset
 
 from misc.utils import divide_chunks
 from dataset.vocab import Vocabulary
@@ -21,8 +15,6 @@ log = logger
 class ActionHistoryPreprocessing:
     def __init__(self,
                  mlm=True,
-                 root="./data/action_history/",
-                 fname="summary.3.2022-10-01_2022-11-30",
                 #  seq_len=10, # transition単位のレコードだと難しい
                 #  stride=5,　# transition単位のレコードだと難しい
                  seq_len=2,
@@ -38,8 +30,6 @@ class ActionHistoryPreprocessing:
         self.skip_user = skip_user
 
         self.mlm = mlm
-        self.root = root
-        self.fname = fname
         self.trans_stride = stride
         self.vocab = Vocabulary(adap_thres, target_column_name="reaction", vocab_dir=vocab_dir) # ラベルのカラムどうするか
         self.seq_len = seq_len
@@ -49,7 +39,7 @@ class ActionHistoryPreprocessing:
         self.data = []
 
         self.input_data = input_data
-          
+
         self.ncols = None
         self.num_bins = num_bins
         self.encode_data()
