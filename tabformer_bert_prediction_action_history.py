@@ -50,9 +50,11 @@ preprocessed_data = ActionHistoryPreprocessing(
 input_ids = torch.tensor([preprocessed_data.getitem()], dtype=torch.long)
 
 # load model
-model = CommonModel()
+# model = CommonModel()
+# model.to(device)
+# model.load_state_dict(torch.load("./output_fine_tuning/action_history/fine_tuning_model.pth"))
+model = torch.jit.load("./output_fine_tuning/action_history/fine_tuning_model.pt")
 model.to(device)
-model.load_state_dict(torch.load("./output_fine_tuning/action_history/fine_tuning_model.pth"))
 model.eval()
 with torch.no_grad():
   output = model(input_ids.to(device))

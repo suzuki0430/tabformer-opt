@@ -242,7 +242,12 @@ def main(args):
                 train_iter_loss = 0
             bar.update(1)
     # wandb.finish()
-    torch.save(model.state_dict(), path.join(args.output_dir, f'fine_tuning_model.pth'))
+
+    sample_input_ids = torch.tensor([train_dataset.__getitem__(0)[0].tolist()], dtype=torch.long)
+    traced_model = torch.jit.trace(model, [sample_input_ids.to(device)])
+    torch.jit.save(traced_model, path.join(args.output_dir, f'fine_tuning_model.pt'))
+    
+    # torch.save(model.state_dict(), path.join(args.output_dir, f'fine_tuning_model.pth'))
 if __name__ == "__main__":
 
     parser = define_fine_tuning_parser()
