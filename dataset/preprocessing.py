@@ -5,33 +5,61 @@ import tqdm
 import pickle
 import logging
 
-from misc.utils import divide_chunks
-from dataset.vocab import Vocabulary
-
 logger = logging.getLogger(__name__)
 log = logger
 
 
 class ActionHistoryPreprocessing:
+    INPUT_COLUMNS = ['created_at',
+                        'session_id',
+                        'visitor_id',
+                        'user_id',
+                        'type',
+                        'chat_sender',
+                        'chat_type',
+                        'chat',
+                        'company_id',
+                        'company_name',
+                        'site_id',
+                        'site_name',
+                        'device',
+                        'ma_crm',
+                        'sfa',
+                        'call_start_date',
+                        'call_end_date',
+                        'notification_name',
+                        'notification_tool',
+                        'url',
+                        'stay_seconds']
+    
+    PREPROCESSED_COLUMNS = ['year',
+                            'month',
+                            'day',
+                            'hour',
+                            'visitor_id',
+                            'company_id',
+                            'site_id',
+                            'device',
+                            'ma_crm',
+                            'sfa',
+                            'url',
+                            'stay_seconds',
+                            'day_of_week',
+                        #  'revisit'
+                        ]
+    
     def __init__(self,
-                 mlm=True,
                 #  seq_len=10, # transition単位のレコードだと難しい
                 #  stride=5,　# transition単位のレコードだと難しい
                  seq_len=2,
                  stride=1,
                  num_bins=10,
                  vocab_dir="checkpoints",
-                 adap_thres=10 ** 8,
-                 skip_user=False,
                  token2id_file="",
                  input_data=[],
                  encoder_fit={}):
 
-        self.skip_user = skip_user
-
-        self.mlm = mlm
         self.trans_stride = stride
-        self.vocab = Vocabulary(adap_thres, target_column_name="reaction", vocab_dir=vocab_dir) # ラベルのカラムどうするか
         self.seq_len = seq_len
         self.encoder_fit = encoder_fit
 
@@ -40,10 +68,9 @@ class ActionHistoryPreprocessing:
 
         self.input_data = input_data
 
-        self.ncols = None
         self.num_bins = num_bins
+                
         self.encode_data()
-        self.init_vocab()
         self.prepare_samples(token2id_file)
 
     # id変換した連結データをリストで返す
@@ -52,6 +79,11 @@ class ActionHistoryPreprocessing:
 
     def __len__(self):
         return len(self.data)
+    
+    @staticmethod
+    def divide_chunks(l, n):
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
 
     @staticmethod
     def timeEncoder(X):
@@ -102,11 +134,12 @@ class ActionHistoryPreprocessing:
         with open(token2id_file, 'rb') as p:
             vocab_dic = pickle.load(p)
 
-        trans_lst = list(divide_chunks(trans_lst, len(self.vocab.field_keys) - 1))  # 2 to ignore isFraud and SPECIAL
+        trans_lst = list(self.divide_chunks(trans_lst, len(self.PREPROCESSED_COLUMNS)))  # 2 to ignore reaction and SPECIAL
 
         user_vocab_ids = []
 
-        sep_id = self.vocab.get_id(self.vocab.sep_token, special_token=True)
+        # 固定
+        sep_id = 1
 
         for trans in trans_lst:
             vocab_ids = []
@@ -114,9 +147,7 @@ class ActionHistoryPreprocessing:
                 vocab_id, _ = vocab_dic[column_names[jdx]][field]
                 vocab_ids.append(vocab_id)
 
-            # TODO : need to handle ncols when sep is not added
-            if self.mlm:  # and self.flatten:  # only add [SEP] for BERT + flatten scenario
-                vocab_ids.append(sep_id)
+            vocab_ids.append(sep_id)
 
             user_vocab_ids.append(vocab_ids)
 
@@ -137,39 +168,9 @@ class ActionHistoryPreprocessing:
 
                 self.data.append(ids)
 
-        self.ncols = len(self.vocab.field_keys) - 1 + (1 if self.mlm else 0)
-        log.info(f"ncols: {self.ncols}")
-        log.info(f"no of samples {len(self.data)}")
-
-    def get_data_frame(self, input_data):
-        columns_to_select = ['created_at',
-                            'session_id',
-                            'visitor_id',
-                            'user_id',
-                            'type',
-                            'chat_sender',
-                            'chat_type',
-                            'chat',
-                            'company_id',
-                            'company_name',
-                            'site_id',
-                            'site_name',
-                            'device',
-                            'ma_crm',
-                            'sfa',
-                            'call_start_date',
-                            'call_end_date',
-                            'notification_name',
-                            'notification_tool',
-                            'url',
-                            'stay_seconds']
-
-        return pd.DataFrame(input_data,columns=columns_to_select)
-
-    # pre-trainingでset_idが完了している
-    def init_vocab(self):
-        column_names = list(self.trans_table.columns)
-        self.vocab.set_field_keys(column_names)
+    @classmethod
+    def get_data_frame(cls, input_data):        
+        return pd.DataFrame(input_data,columns=cls.INPUT_COLUMNS)
 
     def encode_data(self):
         # DataFrameへの変換
@@ -207,21 +208,4 @@ class ActionHistoryPreprocessing:
         
         # TODO: revisit
 
-        # 入力を変換するだけなのでreactionは不要
-        columns_to_select = ['year',
-                             'month',
-                             'day',
-                             'hour',
-                             'visitor_id',
-                             'company_id',
-                             'site_id',
-                             'device',
-                             'ma_crm',
-                             'sfa',
-                             'url',
-                             'stay_seconds',
-                             'day_of_week',
-                            #  'revisit'
-                            ]
-
-        self.trans_table = data[columns_to_select]
+        self.trans_table = data[self.PREPROCESSED_COLUMNS]
